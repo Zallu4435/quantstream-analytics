@@ -1,0 +1,28 @@
+{
+  "name": "@crypto-analytics/websocket-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "lint": "eslint . --ext .ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crypto-analytics/contracts": "workspace:*",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "kafkajs": "^2.2.4",
+    "socket.io": "^4.8.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/express": "^5.0.2",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  }
+}

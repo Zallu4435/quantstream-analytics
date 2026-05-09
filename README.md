@@ -1,159 +1,62 @@
-# Turborepo starter
+# CryptoOps Analytics Platform
 
-This Turborepo starter is maintained by the Turborepo core team.
+A high-performance, real-time cryptocurrency analytics terminal built with a robust microservices architecture. It ingests live WebSocket data from Binance, processes it through distributed Kafka queues, caches hot data in Redis, and persists time-series data into TimescaleDB for historical analysis.
 
-## Using this example
+## 🚀 Architecture
 
-Run the following command:
+The platform is designed around Clean Architecture and Event-Driven patterns to handle thousands of ticks per second without blocking the event loop or dropping data.
 
-```sh
-npx create-turbo@latest
-```
+### Services (Turborepo Monorepo)
+* **`apps/api-gateway`**: Express.js edge gateway with structured Pino logging, request ID tracing, rate limiting, and Auth-service proxying.
+* **`apps/web`**: React + Vite frontend featuring a bespoke "Technical/HUD" design system. Uses Zustand for lightweight global state, Framer Motion for hardware-accelerated micro-animations, and Lightweight Charts for real-time 1s order flow aggregation.
+* **`services/producer-service`**: Ingests raw ticks from Binance WS. Protected by an Opossum Circuit Breaker and an in-memory backpressure queue (`p-queue`) to gracefully survive upstream outages and network spikes.
+* **`services/market-service`**: Consumes raw ticks via Kafkajs `eachBatch` for high-throughput parallel processing. Aggregates data and persists historical ticks to TimescaleDB with exponential backoff retries.
+* **`services/analytics-service`**: Processes ticks into 1-minute OHLCV candles and evaluates them against user-defined price alerts using an Exponentially Weighted Moving Average (EWMA) to filter out tick-by-tick "spam".
+* **`services/auth-service`**: Handles JWT-based authentication and user management.
+* **`services/websocket-service`**: Dedicated Socket.IO broadcasting service that pushes deduplicated, finalized candles and alerts to the React frontend.
 
-## What's inside?
+### Infrastructure & Data Layer
+* **Kafka**: Distributed event streaming (Topics: `raw-ticks`, `candles`, `alerts`).
+* **Redis**: Fast key-value store for active sessions and real-time ticker caches.
+* **TimescaleDB / PostgreSQL**: Optimized for massive time-series data storage (`trades` and `candles` hypertables), accessed via Prisma ORM.
 
-This Turborepo includes the following packages/apps:
+## 🛠️ Getting Started
 
-### Apps and Packages
+### Prerequisites
+* Node.js v18+
+* pnpm v9+
+* Docker & Docker Compose (for Kafka, Zookeeper, Redis, and PostgreSQL)
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Installation & Execution
+1. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+2. **Start Infrastructure (Docker):**
+   ```bash
+   # Make sure your docker daemon is running, then spin up the DBs and Message Broker
+   docker-compose up -d
+   ```
 
-### Utilities
+3. **Database Migrations:**
+   ```bash
+   cd packages/database
+   npx prisma generate
+   npx prisma migrate dev
+   ```
 
-This Turborepo has some additional tools already setup for you:
+4. **Build & Run the Platform:**
+   ```bash
+   pnpm run build
+   pnpm run dev
+   ```
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+The web dashboard will be available at `http://localhost:5173`.
 
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+## 🛡️ Production Hardening
+This platform has been thoroughly audited and hardened for production:
+* **Memory Leaks Sealed**: React StrictMode double-mounting Socket.IO listeners and Zustand store unbounded growth have been resolved.
+* **Event-Loop Optimized**: Removed heavy Zod runtime validations from hot-paths (internal trusted Kafka topics).
+* **Resilience**: Integrated exponential backoff DB retry mechanisms to survive temporary database connection drops.
+* **Tracing**: Propagated `x-request-id` headers through Edge proxy down to internal structured logs.

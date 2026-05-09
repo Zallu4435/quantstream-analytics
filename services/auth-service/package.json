@@ -1,0 +1,33 @@
+{
+  "name": "@crypto-analytics/auth-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "lint": "eslint . --ext .ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^4.4.3",
+    "cors": "^2.8.5",
+    "helmet": "^8.1.0",
+    "dotenv": "^16.5.0",
+    "@prisma/client": "^6.8.2",
+    "@crypto-analytics/database": "workspace:*",
+    "@crypto-analytics/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/express": "^5.0.2",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/cors": "^2.8.19",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  }
+}

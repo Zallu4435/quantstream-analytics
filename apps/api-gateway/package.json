@@ -1,0 +1,34 @@
+{
+  "name": "@crypto-analytics/api-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crypto-analytics/contracts": "workspace:*",
+    "@crypto-analytics/database": "workspace:*",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "http-proxy-middleware": "^3.0.5",
+    "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  }
+}

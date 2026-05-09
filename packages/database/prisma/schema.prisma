@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Market Data Models ─────────────────────────────────────
+
+model Trade {
+  id           String   @id @default(cuid())
+  symbol       String
+  price        Float
+  quantity     Float
+  timestamp    DateTime
+  tradeId      String   @unique
+  isBuyerMaker Boolean
+  createdAt    DateTime @default(now())
+
+  @@index([symbol, timestamp])
+  @@index([timestamp])
+  @@map("trades")
+}
+
+model Candle {
+  id        String   @id @default(cuid())
+  symbol    String
+  interval  String   // e.g., "1m", "5m"
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float
+  timestamp DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([symbol, interval, timestamp])
+  @@index([symbol, timestamp])
+  @@map("candles")
+}
+
+
+model Alert {
+  id            String   @id @default(cuid())
+  userId        String?  // Optional for now to avoid breaking existing data if any, but should be required
+  type          String
+  symbol        String
+  price         Float
+  previousPrice Float
+  changePercent Float
+  message       String
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([symbol, timestamp])
+  @@index([type])
+  @@map("alerts")
+}
+
+// ── Auth Models ────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}

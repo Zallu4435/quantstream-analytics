@@ -1,0 +1,28 @@
+{
+  "name": "@crypto-analytics/producer-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "lint": "eslint . --ext .ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crypto-analytics/contracts": "workspace:*",
+    "dotenv": "^16.5.0",
+    "kafkajs": "^2.2.4",
+    "opossum": "^9.0.0",
+    "p-queue": "^9.2.0",
+    "ws": "^8.18.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/opossum": "^8.1.9",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  }
+}
