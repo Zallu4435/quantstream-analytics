@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { socket, connectSocket } from "@/shared/lib/socket";
 import { useAlertStore } from "@/features/alerts/store/useAlertStore";
+import { api } from "@/shared/lib/api";
 import type { AlertEvent } from "@crypto-analytics/contracts";
 
 export function useAlertStream(): void {
@@ -8,6 +9,21 @@ export function useAlertStream(): void {
   const subscribedRef = useRef(false);
 
   useEffect(() => {
+    // 1. Fetch historical alerts
+    api.get<any[]>("/alerts")
+      .then((history) => {
+        // Reverse to add oldest first so they appear in correct order in store
+        history.reverse().forEach((alert) => {
+          addAlert({
+            ...alert,
+            id: alert.id,
+            read: true,
+            receivedAt: Date.now(),
+          });
+        });
+      })
+      .catch((err) => console.error("Failed to fetch alert history:", err));
+
     function onAlert(data: AlertEvent) {
       addAlert({
         ...data,
@@ -40,3 +56,4 @@ export function useAlertStream(): void {
     };
   }, [addAlert]);
 }
+

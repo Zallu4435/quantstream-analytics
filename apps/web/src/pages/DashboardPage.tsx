@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useMarketStream, TickerCard, TradingChart, useMarketStore } from "@/features/market-data";
 import { useAlertStream, AlertFeed } from "@/features/alerts";
 import { cn } from "@/shared/lib/utils";
-import { Activity, ChevronRight, Globe, Bell } from "lucide-react";
+import { Activity, ChevronRight, Globe } from "lucide-react";
 
 const TRACKED_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
 
@@ -66,9 +66,7 @@ export function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl border border-white/10 flex items-center justify-center hover:bg-white/5 cursor-pointer transition-all group">
-              <Bell className="h-4 w-4 text-zinc-400 group-hover:text-white transition-colors" />
-            </div>
+
             <div className="h-9 w-9 rounded-xl border border-white/10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800 hover:brightness-110 cursor-pointer transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)]">
               <Globe className="h-4 w-4 text-white" />
             </div>
