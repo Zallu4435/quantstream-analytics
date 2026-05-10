@@ -17,7 +17,9 @@
 //         └→ satisfy domain/repositories/* interfaces
 // ────────────────────────────────────────────────────────────
 
-import "dotenv/config";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -39,7 +41,7 @@ import { createAuthRouter } from "./presentation/controllers/AuthController.js";
 
 // ── Configuration ──────────────────────────────────────────
 const config = {
-  port: parseInt(process.env.PORT || "4001", 10),
+  port: parseInt(process.env.AUTH_PORT || "4001", 10),
   corsOrigin: (() => {
     const origin = process.env.CORS_ORIGIN || "*";
     if (process.env.NODE_ENV === "production" && origin === "*") {

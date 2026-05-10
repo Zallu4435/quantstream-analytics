@@ -21,7 +21,6 @@ export class TickEventHandler {
     if (!message.value) return;
 
     const raw = JSON.parse(message.value.toString());
-    console.log(`📥 Received tick for ${raw.symbol} @ ${raw.price}`);
     const result = TickSchema.safeParse(raw);
 
     if (!result.success) {

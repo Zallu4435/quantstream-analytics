@@ -1,3 +1,6 @@
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 import type { RequestHandler, Request, Response, NextFunction } from "express";
 import express from "express";
 import cors from "cors";
@@ -5,7 +8,6 @@ import helmet from "helmet";
 import compression from "compression";
 import { rateLimit } from "express-rate-limit";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import "dotenv/config";
 
 import { authMiddleware } from "./middleware/auth.js";
 import { getMarketHistory, getTickers } from "./controllers/market.js";

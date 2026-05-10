@@ -19,12 +19,6 @@ export interface ICandleRepository {
     ttlSeconds: number
   ): Promise<CandleProps>;
 
-  /** Save/update the current candle window */
-  saveWindow(candle: Candle, ttlSeconds: number): Promise<void>;
-
-  /** Update the "latest" pointer for quick reads by other services */
-  saveLatest(candle: Candle): Promise<void>;
-
   /** Delete a completed window after it has been flushed */
   deleteWindow(symbol: string, intervalStart: number): Promise<void>;
 

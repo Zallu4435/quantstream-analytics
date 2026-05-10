@@ -17,7 +17,9 @@
 //         └→ satisfy domain/repositories/* interfaces
 // ────────────────────────────────────────────────────────────
 
-import "dotenv/config";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 import { Redis } from "ioredis";
 
 // ── Shared Database (Prisma singleton from monorepo package) ─
@@ -127,10 +129,23 @@ async function bootstrap(): Promise<void> {
     }
   }, 10_000);
 
+  // ── 6.1 TimescaleDB Cleanup Cron ────────────────────────
+  const cleanupInterval = setInterval(async () => {
+    try {
+      console.log("🧹 Running TimescaleDB chunk cleanup for candles...");
+      // Using manual drop_chunks since Aiven free tier doesn't support add_retention_policy
+      await prisma.$executeRawUnsafe(`SELECT drop_chunks('candles', INTERVAL '30 days');`);
+      console.log("✅ Dropped candles older than 30 days.");
+    } catch (err) {
+      console.error("[CleanupCandles] Failed to drop chunks:", err);
+    }
+  }, 60 * 60 * 1000); // 1 hour
+
   // ── 7. Graceful Shutdown ──────────────────────────────
   async function shutdown(signal: string): Promise<void> {
     console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
     clearInterval(flushInterval);
+    clearInterval(cleanupInterval);
     await consumer.disconnect();
     await alertProducer.disconnect();
     await candleProducer.disconnect();

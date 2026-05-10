@@ -13,22 +13,24 @@ datasource db {
 // ── Market Data Models ─────────────────────────────────────
 
 model Trade {
-  id           String   @id @default(cuid())
+  id           String   @default(cuid())
   symbol       String
   price        Float
   quantity     Float
   timestamp    DateTime
-  tradeId      String   @unique
+  tradeId      String
   isBuyerMaker Boolean
   createdAt    DateTime @default(now())
 
+  @@id([id, timestamp])
+  @@unique([tradeId, timestamp])
   @@index([symbol, timestamp])
   @@index([timestamp])
   @@map("trades")
 }
 
 model Candle {
-  id        String   @id @default(cuid())
+  id        String   @default(cuid())
   symbol    String
   interval  String   // e.g., "1m", "5m"
   open      Float
@@ -39,6 +41,7 @@ model Candle {
   timestamp DateTime
   createdAt DateTime @default(now())
 
+  @@id([id, timestamp])
   @@unique([symbol, interval, timestamp])
   @@index([symbol, timestamp])
   @@map("candles")

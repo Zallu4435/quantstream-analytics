@@ -2,7 +2,9 @@
 // Composition Root: main.ts
 // ────────────────────────────────────────────────────────────
 
-import "dotenv/config";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 import { createServer } from "http";
 import express from "express";
 import helmet from "helmet";
@@ -24,7 +26,7 @@ import { ConnectionHandler } from "./presentation/socket-handlers/ConnectionHand
 
 // ── Configuration ──────────────────────────────────────────
 const config = {
-  port: parseInt(process.env.PORT || "4100", 10),
+  port: parseInt(process.env.WS_PORT || "4100", 10),
   corsOrigin: (() => {
     const origin = process.env.CORS_ORIGIN || "*";
     if (process.env.NODE_ENV === "production" && origin === "*") {
@@ -34,7 +36,7 @@ const config = {
   })(),
   kafka: {
     brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(","),
-    topicCandles: process.env.KAFKA_TOPIC_CANDLES || "candles",
+    topicTicks: process.env.KAFKA_TOPIC || "raw-ticks",
     topicAlerts: process.env.KAFKA_TOPIC_ALERTS || "alerts",
     clientId: "websocket-service",
   },
@@ -89,10 +91,10 @@ async function bootstrap(): Promise<void> {
   // ── 2. Create Infrastructure ──────────────────────────
   const broadcaster = new SocketIOBroadcaster(io);
   
-  const candleConsumer = new KafkaEventConsumer({
+  const tickConsumer = new KafkaEventConsumer({
     brokers: config.kafka.brokers,
-    groupId: "websocket-candles-group",
-    topic: config.kafka.topicCandles,
+    groupId: "websocket-ticks-group",
+    topic: config.kafka.topicTicks,
     clientId: config.kafka.clientId,
   });
 
@@ -104,11 +106,11 @@ async function bootstrap(): Promise<void> {
   });
 
   // ── 3. Create Use Cases ───────────────────────────────
-  const broadcastCandle = new BroadcastTick({ broadcaster }); // Keeping the class name for now but variable name is candle
+  const broadcastTick = new BroadcastTick({ broadcaster });
   const broadcastAlert = new BroadcastAlert({ broadcaster });
 
   // ── 4. Create Presentation Handlers ───────────────────
-  const candleEventHandler = new TickEventHandler({ broadcastTick: broadcastCandle });
+  const tickEventHandler = new TickEventHandler({ broadcastTick });
   const alertEventHandler = new AlertEventHandler({ broadcastAlert });
   const connectionHandler = new ConnectionHandler(io);
 
@@ -117,7 +119,7 @@ async function bootstrap(): Promise<void> {
 
   // ── 6. Start Kafka Consumers ──────────────────────────
   await Promise.all([
-    candleConsumer.start((payload) => candleEventHandler.handle(payload)),
+    tickConsumer.start((payload) => tickEventHandler.handle(payload)),
     alertConsumer.start((payload) => alertEventHandler.handle(payload)),
   ]);
 
@@ -131,7 +133,7 @@ async function bootstrap(): Promise<void> {
     console.log(`\n🛑 Received ${signal}. Shutting down...`);
     io.close();
     await Promise.allSettled([
-      candleConsumer.disconnect(),
+      tickConsumer.disconnect(),
       alertConsumer.disconnect(),
     ]);
     httpServer.close();

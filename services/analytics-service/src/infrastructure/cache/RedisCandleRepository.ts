@@ -29,23 +29,7 @@ export class RedisCandleRepository implements ICandleRepository {
     }
   }
 
-  async saveWindow(candle: Candle, ttlSeconds: number): Promise<void> {
-    await this.redis.set(
-      this.windowKey(candle.symbol, candle.openTime),
-      JSON.stringify(candle.toJSON()),
-      "EX",
-      ttlSeconds
-    );
-  }
 
-  async saveLatest(candle: Candle): Promise<void> {
-    await this.redis.set(
-      `candle:${candle.symbol}:${candle.interval}:latest`,
-      JSON.stringify(candle.toJSON()),
-      "EX",
-      120
-    );
-  }
 
   async deleteWindow(symbol: string, intervalStart: number): Promise<void> {
     await this.redis.del(this.windowKey(symbol, intervalStart));

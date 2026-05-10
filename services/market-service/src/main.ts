@@ -17,7 +17,9 @@
 //         └→ satisfy domain/repositories/* interfaces
 // ────────────────────────────────────────────────────────────
 
-import "dotenv/config";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 import { Redis } from "ioredis";
 import { prisma, disconnect as disconnectPrisma } from "@crypto-analytics/database";
 
@@ -100,10 +102,23 @@ async function bootstrap(): Promise<void> {
     }
   }, 10_000);
 
+  // ── 5.1 TimescaleDB Cleanup Cron ────────────────────────
+  const cleanupInterval = setInterval(async () => {
+    try {
+      console.log("🧹 Running TimescaleDB chunk cleanup for trades...");
+      // Using manual drop_chunks since Aiven free tier doesn't support add_retention_policy
+      await prisma.$executeRawUnsafe(`SELECT drop_chunks('trades', INTERVAL '7 days');`);
+      console.log("✅ Dropped trades older than 7 days.");
+    } catch (err) {
+      console.error("[CleanupTrades] Failed to drop chunks:", err);
+    }
+  }, 60 * 60 * 1000); // 1 hour
+
   // ── 6. Graceful Shutdown ──────────────────────────────
   async function shutdown(signal: string): Promise<void> {
     console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
     clearInterval(flushInterval);
+    clearInterval(cleanupInterval);
     
     // Ensure buffered trades are flushed before exiting
     console.log("💾 Flushing remaining trades to database...");

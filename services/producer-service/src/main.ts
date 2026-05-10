@@ -5,7 +5,9 @@
 // It creates concrete implementations, injects them into
 // use cases, and starts the service.
 
-import "dotenv/config";
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 
 // ── Infrastructure ─────────────────────────────────────────
 import { BinanceMarketStream } from "./infrastructure/external/BinanceMarketStream.js";

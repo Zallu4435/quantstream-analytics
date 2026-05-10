@@ -42,44 +42,9 @@ export class Candle {
     this.tradeCount = props.tradeCount;
   }
 
-  /**
-   * Apply a new tick to this candle, updating OHLCV values.
-   * This is the core aggregation business rule.
-   */
-  applyTick(price: number, quantity: number): void {
-    this.high = Math.max(this.high, price);
-    this.low = Math.min(this.low, price);
-    this.close = price;
-    this.volume += quantity;
-    this.tradeCount += 1;
-  }
-
   /** Check if this candle's time window has closed */
   isComplete(now: number): boolean {
     return now > this.closeTime;
-  }
-
-  /** Create a new Candle for the start of a window */
-  static create(
-    symbol: string,
-    interval: string,
-    intervalMs: number,
-    openTime: number,
-    firstPrice: number,
-    firstQuantity: number
-  ): Candle {
-    return new Candle({
-      symbol,
-      interval,
-      openTime,
-      closeTime: openTime + intervalMs - 1,
-      open: firstPrice,
-      high: firstPrice,
-      low: firstPrice,
-      close: firstPrice,
-      volume: firstQuantity,
-      tradeCount: 1,
-    });
   }
 
   /** Serialize to plain object (for Redis/Kafka) */
