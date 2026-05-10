@@ -7,7 +7,6 @@
 export type AlertType = "PRICE_SPIKE" | "PRICE_DROP" | "VOLUME_SURGE" | "WHALE_TRADE";
 
 export interface AlertProps {
-  userId?: string;
   type: AlertType;
   symbol: string;
   price: number;
@@ -18,7 +17,6 @@ export interface AlertProps {
 }
 
 export class Alert {
-  readonly userId?: string;
   readonly type: AlertType;
   readonly symbol: string;
   readonly price: number;
@@ -28,7 +26,6 @@ export class Alert {
   readonly message: string;
 
   constructor(props: AlertProps) {
-    this.userId = props.userId;
     this.type = props.type;
     this.symbol = props.symbol;
     this.price = props.price;
@@ -49,8 +46,7 @@ export class Alert {
     currentPrice: number,
     previousPrice: number,
     threshold: number,
-    timestamp: number,
-    userId?: string
+    timestamp: number
   ): Alert | null {
     // Time-decayed reference price (EWMA)
     const decayFactor = 0.99;
@@ -62,7 +58,6 @@ export class Alert {
     const type: AlertType = currentPrice > smoothedPrice ? "PRICE_SPIKE" : "PRICE_DROP";
 
     return new Alert({
-      userId,
       type,
       symbol,
       price: currentPrice,
@@ -76,7 +71,6 @@ export class Alert {
   /** Serialize to plain object (for Kafka) */
   toJSON(): AlertProps {
     return {
-      userId: this.userId,
       type: this.type,
       symbol: this.symbol,
       price: this.price,

@@ -14,23 +14,19 @@
 import type { EachMessagePayload } from "kafkajs";
 import { TickSchema } from "../../application/dtos/TickDTO.js";
 import type { ProcessTick } from "../../application/use-cases/ProcessTick.js";
-import type { PersistTrades } from "../../application/use-cases/PersistTrades.js";
 
 interface MarketDataHandlerDeps {
   processTick: ProcessTick;
-  persistTrades: PersistTrades;
 }
 
 export class MarketDataHandler {
   private readonly processTick: ProcessTick;
-  private readonly persistTrades: PersistTrades;
   private tickBatch: ReturnType<typeof TickSchema.parse>[] = [];
   private batchTimer: NodeJS.Timeout | null = null;
   private readonly batchMs = 100;
 
   constructor(deps: MarketDataHandlerDeps) {
     this.processTick = deps.processTick;
-    this.persistTrades = deps.persistTrades;
   }
 
   private async flushBatch(): Promise<void> {
@@ -39,10 +35,7 @@ export class MarketDataHandler {
     this.tickBatch = [];
     this.batchTimer = null;
 
-    await Promise.all([
-      Promise.all(batch.map((t) => this.processTick.execute(t))),
-      Promise.all(batch.map((t) => this.persistTrades.execute(t))),
-    ]);
+    await Promise.all(batch.map((t) => this.processTick.execute(t)));
   }
 
   async handle({ message }: EachMessagePayload): Promise<void> {
@@ -53,7 +46,7 @@ export class MarketDataHandler {
     // Skip expensive Zod validation on this hot path since the
     // message is already validated by the producer on the internal topic.
     const tick = raw as ReturnType<typeof TickSchema.parse>;
-    
+
     this.tickBatch.push(tick);
 
     if (!this.batchTimer) {

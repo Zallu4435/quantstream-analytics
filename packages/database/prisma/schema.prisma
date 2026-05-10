@@ -12,22 +12,7 @@ datasource db {
 
 // ── Market Data Models ─────────────────────────────────────
 
-model Trade {
-  id           String   @default(cuid())
-  symbol       String
-  price        Float
-  quantity     Float
-  timestamp    DateTime
-  tradeId      String
-  isBuyerMaker Boolean
-  createdAt    DateTime @default(now())
 
-  @@id([id, timestamp])
-  @@unique([tradeId, timestamp])
-  @@index([symbol, timestamp])
-  @@index([timestamp])
-  @@map("trades")
-}
 
 model Candle {
   id        String   @default(cuid())
@@ -50,7 +35,6 @@ model Candle {
 
 model Alert {
   id            String   @id @default(cuid())
-  userId        String?  // Optional for now to avoid breaking existing data if any, but should be required
   type          String
   symbol        String
   price         Float
@@ -60,22 +44,8 @@ model Alert {
   timestamp     DateTime
   createdAt     DateTime @default(now())
 
-  @@index([userId])
-  @@index([userId, createdAt])
   @@index([symbol, timestamp])
   @@index([type])
   @@map("alerts")
 }
 
-// ── Auth Models ────────────────────────────────────────────
-
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("users")
-}

@@ -9,7 +9,6 @@ import compression from "compression";
 import { rateLimit } from "express-rate-limit";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
-import { authMiddleware } from "./middleware/auth.js";
 import { getMarketHistory, getTickers } from "./controllers/market.js";
 import { getUserAlerts } from "./controllers/alerts.js";
 import { createLogger } from "@crypto-analytics/contracts";
@@ -19,7 +18,6 @@ import { redis } from "./redis.js";
 const app = express();
 const logger = createLogger("api-gateway");
 const PORT = process.env.PORT || 4000;
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://localhost:4001";
 
 // ── Security & Middleware ──────────────────────────────────
 app.set("trust proxy", 1);
@@ -44,17 +42,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Auth Proxy ─────────────────────────────────────────────
-app.use(
-  "/api/v1/auth",
-  createProxyMiddleware({
-    target: AUTH_SERVICE_URL,
-    changeOrigin: true,
-    pathRewrite: {
-      "^/api/v1/auth": "/auth",
-    },
-  })
-);
 
 // ── Body Parsing (for non-proxied routes) ──────────────────
 app.use(express.json({ limit: "10kb" }));
@@ -78,7 +65,7 @@ app.get("/api/v1/market/tickers", getTickers);
 const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler => {
   return (req, res, next) => fn(req, res, next).catch(next);
 };
-app.get("/api/v1/alerts", authMiddleware, asyncHandler(getUserAlerts));
+app.get("/api/v1/alerts", asyncHandler(getUserAlerts));
 
 // ── Health Check ───────────────────────────────────────────
 app.get("/health", async (_req, res) => {
@@ -124,5 +111,4 @@ app.use(
 app.listen(PORT, () => {
   logger.info(`🚀 API Gateway listening on http://localhost:${PORT}`);
   logger.info(`   Health:      http://localhost:${PORT}/health`);
-  logger.info(`   Auth Proxy:  http://localhost:${PORT}/api/v1/auth -> ${AUTH_SERVICE_URL}`);
 });

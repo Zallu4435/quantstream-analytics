@@ -8,7 +8,7 @@
 //
 // Usage:
 //   import { prisma } from "@crypto-analytics/database";
-//   const trades = await prisma.trade.findMany();
+//   const candles = await prisma.candle.findMany();
 //
 // Graceful shutdown:
 //   import { disconnect } from "@crypto-analytics/database";

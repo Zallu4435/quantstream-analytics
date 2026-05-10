@@ -36,7 +36,6 @@ export class PersistentAlertRepository implements IAlertRepository {
   async saveAlert(alert: Alert): Promise<void> {
     await this.prisma.alert.create({
       data: {
-        userId: alert.userId || null,
         type: alert.type,
         symbol: alert.symbol,
         price: alert.price,

@@ -25,12 +25,10 @@ import { prisma, disconnect as disconnectPrisma } from "@crypto-analytics/databa
 
 // ── Infrastructure ─────────────────────────────────────────
 import { RedisTickerRepository } from "./infrastructure/cache/RedisTickerRepository.js";
-import { PrismaTradeRepository } from "./infrastructure/database/PrismaTradeRepository.js";
 import { KafkaMarketConsumer } from "./infrastructure/messaging/KafkaMarketConsumer.js";
 
 // ── Application ────────────────────────────────────────────
 import { ProcessTick } from "./application/use-cases/ProcessTick.js";
-import { PersistTrades } from "./application/use-cases/PersistTrades.js";
 
 // ── Presentation ───────────────────────────────────────────
 import { MarketDataHandler } from "./presentation/event-handlers/MarketDataHandler.js";
@@ -67,7 +65,6 @@ async function bootstrap(): Promise<void> {
   });
 
   const tickerRepository = new RedisTickerRepository(redis);
-  const tradeRepository = new PrismaTradeRepository(prisma);
 
   // ── 2. Create Use Cases (inject dependencies) ─────────
   const processTick = new ProcessTick({
@@ -75,55 +72,25 @@ async function bootstrap(): Promise<void> {
     tickerTtlSeconds: config.ticker.ttlSeconds,
   });
 
-  const persistTrades = new PersistTrades({
-    tradeRepository,
-    batchSize: config.database.batchSize,
-  });
-
-  console.log("✅ Use cases initialized (ProcessTick + PersistTrades)");
+  console.log("✅ Use cases initialized (ProcessTick)");
 
   // ── 3. Create Presentation Handler ────────────────────
   const marketDataHandler = new MarketDataHandler({
     processTick,
-    persistTrades,
   });
 
   // ── 4. Start Consumer (bind handler) ──────────────────
   await consumer.start((payload) => marketDataHandler.handle(payload));
 
   // ── 5. Start Periodic Flush ───────────────────────────
-  const flushInterval = setInterval(async () => {
-    try {
-      if (persistTrades.bufferedCount > 0) {
-        await persistTrades.flush();
-      }
-    } catch (err) {
-      console.error("[FlushTrades] Periodic flush failed:", err);
-    }
-  }, 10_000);
-
-  // ── 5.1 TimescaleDB Cleanup Cron ────────────────────────
-  const cleanupInterval = setInterval(async () => {
-    try {
-      console.log("🧹 Running TimescaleDB chunk cleanup for trades...");
-      // Using manual drop_chunks since Aiven free tier doesn't support add_retention_policy
-      await prisma.$executeRawUnsafe(`SELECT drop_chunks('trades', INTERVAL '7 days');`);
-      console.log("✅ Dropped trades older than 7 days.");
-    } catch (err) {
-      console.error("[CleanupTrades] Failed to drop chunks:", err);
-    }
-  }, 60 * 60 * 1000); // 1 hour
+  // Note: PersistTrades has been removed for the public platform
+  // to avoid crashing the database with raw ticks.
 
   // ── 6. Graceful Shutdown ──────────────────────────────
   async function shutdown(signal: string): Promise<void> {
     console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
-    clearInterval(flushInterval);
-    clearInterval(cleanupInterval);
-    
-    // Ensure buffered trades are flushed before exiting
-    console.log("💾 Flushing remaining trades to database...");
-    await persistTrades.flush();
-    
+
+
     await consumer.disconnect();
     await redis.quit();
     await disconnectPrisma();

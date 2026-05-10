@@ -7,18 +7,17 @@ A high-performance, real-time cryptocurrency analytics terminal built with a rob
 The platform is designed around Clean Architecture and Event-Driven patterns to handle thousands of ticks per second without blocking the event loop or dropping data.
 
 ### Services (Turborepo Monorepo)
-* **`apps/api-gateway`**: Express.js edge gateway with structured Pino logging, request ID tracing, rate limiting, and Auth-service proxying.
+* **`apps/api-gateway`**: Express.js edge gateway with structured Pino logging, request ID tracing, and rate limiting.
 * **`apps/web`**: React + Vite frontend featuring a bespoke "Technical/HUD" design system. Uses Zustand for lightweight global state, Framer Motion for hardware-accelerated micro-animations, and Lightweight Charts for real-time 1s order flow aggregation.
 * **`services/producer-service`**: Ingests raw ticks from Binance WS. Protected by an Opossum Circuit Breaker and an in-memory backpressure queue (`p-queue`) to gracefully survive upstream outages and network spikes.
-* **`services/market-service`**: Consumes raw ticks via Kafkajs `eachBatch` for high-throughput parallel processing. Aggregates data and persists historical ticks to TimescaleDB with exponential backoff retries.
-* **`services/analytics-service`**: Processes ticks into 1-minute OHLCV candles and evaluates them against user-defined price alerts using an Exponentially Weighted Moving Average (EWMA) to filter out tick-by-tick "spam".
-* **`services/auth-service`**: Handles JWT-based authentication and user management.
+* **`services/market-service`**: Consumes raw ticks via Kafkajs `eachBatch` for high-throughput parallel processing. Aggregates data and updates real-time ticker caches in Redis for the API Gateway.
+* **`services/analytics-service`**: Processes ticks into 1-minute OHLCV candles and evaluates them against global price alerts using an Exponentially Weighted Moving Average (EWMA). Includes automated TimescaleDB cleanup cron jobs.
 * **`services/websocket-service`**: Dedicated Socket.IO broadcasting service that pushes deduplicated, finalized candles and alerts to the React frontend.
 
 ### Infrastructure & Data Layer
 * **Kafka**: Distributed event streaming (Topics: `raw-ticks`, `candles`, `alerts`).
 * **Redis**: Fast key-value store for active sessions and real-time ticker caches.
-* **TimescaleDB / PostgreSQL**: Optimized for massive time-series data storage (`trades` and `candles` hypertables), accessed via Prisma ORM.
+* **TimescaleDB / PostgreSQL**: Optimized for time-series data storage (`candles` and `alerts` hypertables), accessed via Prisma ORM. Automated 30-day retention policies ensure the database remains lightweight.
 
 ## 🛠️ Getting Started
 
