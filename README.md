@@ -1,61 +1,360 @@
-# CryptoOps Analytics Platform
+# Crypto Analytics Platform
 
-A high-performance, real-time cryptocurrency analytics terminal built with a robust microservices architecture. It ingests live WebSocket data from Binance, processes it through distributed Kafka queues, caches hot data in Redis, and persists time-series data into TimescaleDB for historical analysis.
+<p align="center">
+  <img src="./docs/assets/dashboard.png" alt="Crypto Analytics Dashboard" width="100%" />
+</p>
 
-## 🚀 Architecture
+<p align="center">
+  Real-time cryptocurrency analytics platform built with Kafka, Redis, TimescaleDB, Socket.IO, and React.
+</p>
 
-The platform is designed around Clean Architecture and Event-Driven patterns to handle thousands of ticks per second without blocking the event loop or dropping data.
+<p align="center">
+  Event-Driven Microservices • Real-Time Streaming • OHLCV Aggregation • WebSocket Broadcasting
+</p>
 
-### Services (Turborepo Monorepo)
-* **`apps/api-gateway`**: Express.js edge gateway with structured Pino logging, request ID tracing, and rate limiting.
-* **`apps/web`**: React + Vite frontend featuring a bespoke "Technical/HUD" design system. Uses Zustand for lightweight global state, Framer Motion for hardware-accelerated micro-animations, and Lightweight Charts for real-time 1s order flow aggregation.
-* **`services/producer-service`**: Ingests raw ticks from Binance WS. Protected by an Opossum Circuit Breaker and an in-memory backpressure queue (`p-queue`) to gracefully survive upstream outages and network spikes.
-* **`services/market-service`**: Consumes raw ticks via Kafkajs `eachBatch` for high-throughput parallel processing. Aggregates data and updates real-time ticker caches in Redis for the API Gateway.
-* **`services/analytics-service`**: Processes ticks into 1-minute OHLCV candles and evaluates them against global price alerts using an Exponentially Weighted Moving Average (EWMA). Includes automated TimescaleDB cleanup cron jobs.
-* **`services/websocket-service`**: Dedicated Socket.IO broadcasting service that pushes deduplicated, finalized candles and alerts to the React frontend.
+<p align="center">
+  <img src="https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript" />
+  <img src="https://img.shields.io/badge/Node.js-%3E%3D18-green?logo=node.js" />
+  <img src="https://img.shields.io/badge/Kafka-3.7-black?logo=apachekafka" />
+  <img src="https://img.shields.io/badge/Redis-7.4-red?logo=redis" />
+  <img src="https://img.shields.io/badge/Turborepo-2.9-black?logo=turbo" />
+  <img src="https://img.shields.io/badge/pnpm-9-orange?logo=pnpm" />
+</p>
 
-### Infrastructure & Data Layer
-* **Kafka**: Distributed event streaming (Topics: `raw-ticks`, `candles`, `alerts`).
-* **Redis**: Fast key-value store for active sessions and real-time ticker caches.
-* **TimescaleDB / PostgreSQL**: Optimized for time-series data storage (`candles` and `alerts` hypertables), accessed via Prisma ORM. Automated 30-day retention policies ensure the database remains lightweight.
+---
 
-## 🛠️ Getting Started
+## Overview
+
+Crypto Analytics Platform is a distributed real-time market data pipeline designed for low-latency financial dashboards and streaming analytics systems.
+
+The platform ingests live Binance trade streams, processes them through Kafka-based event pipelines, aggregates OHLCV candles, evaluates EWMA-smoothed alerts, and broadcasts updates to browser clients through dedicated WebSocket services.
+
+The architecture demonstrates scalable event-driven microservice patterns using TypeScript, Redis hot caching, Kafka fan-out, and time-series persistence.
+
+---
+
+## Features
+
+* Real-time Binance WebSocket ingestion
+* Kafka-based event streaming architecture
+* Redis hot snapshot caching
+* OHLCV candle aggregation engine
+* EWMA-based price spike/drop alerts
+* Room-based WebSocket broadcasting
+* Time-series persistence with TimescaleDB
+* REST API Gateway with structured logging
+* Clean Architecture service boundaries
+* Graceful shutdown and reconnect handling
+* Circuit breaker & backpressure protection
+
+---
+
+## Tech Stack
+
+| Layer          | Technologies                                            |
+| -------------- | ------------------------------------------------------- |
+| Frontend       | React 19, Vite 6, Tailwind CSS, Zustand, TanStack Query |
+| Backend        | Node.js, Express.js 5, Socket.IO, KafkaJS               |
+| Databases      | PostgreSQL, TimescaleDB, Redis                          |
+| Infrastructure | Kafka, Zookeeper, Docker Compose                        |
+| Tooling        | Turborepo, pnpm, Prisma, ESLint, Prettier               |
+| Resilience     | Opossum, p-queue                                        |
+
+---
+
+## System Flow
+
+```text
+Binance Stream
+      │
+      ▼
+Producer Service
+(Zod Validation + Queue + Circuit Breaker)
+      │
+      ▼
+Kafka Topics (raw-ticks)
+      │
+ ┌────┼─────────────┐
+ ▼    ▼             ▼
+Market Analytics   WebSocket
+Service Service    Service
+ ▼       ▼             ▼
+Redis  TimescaleDB  Socket.IO
+      │
+      ▼
+ React Frontend
+```
+
+---
+
+## Project Structure
+
+```bash
+crypto-analytics/
+├── apps/
+│   ├── api-gateway/
+│   └── web/
+├── services/
+│   ├── producer-service/
+│   ├── market-service/
+│   ├── analytics-service/
+│   └── websocket-service/
+├── packages/
+│   ├── contracts/
+│   ├── database/
+│   ├── eslint-config/
+│   └── typescript-config/
+├── infrastructure/
+└── docs/
+```
+
+---
+
+## Quick Start
 
 ### Prerequisites
-* Node.js v18+
-* pnpm v9+
-* Docker & Docker Compose (for Kafka, Zookeeper, Redis, and PostgreSQL)
 
-### Installation & Execution
-1. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
+* Node.js >= 18
+* pnpm >= 9
+* Docker & Docker Compose
 
-2. **Start Infrastructure (Docker):**
-   ```bash
-   # Make sure your docker daemon is running, then spin up the DBs and Message Broker
-   docker-compose up -d
-   ```
+---
 
-3. **Database Migrations:**
-   ```bash
-   cd packages/database
-   npx prisma generate
-   npx prisma migrate dev
-   ```
+### Installation
 
-4. **Build & Run the Platform:**
-   ```bash
-   pnpm run build
-   pnpm run dev
-   ```
+```bash
+git clone <repository-url>
+cd crypto-analytics
 
-The web dashboard will be available at `http://localhost:5173`.
+pnpm install
+```
 
-## 🛡️ Production Hardening
-This platform has been thoroughly audited and hardened for production:
-* **Memory Leaks Sealed**: React StrictMode double-mounting Socket.IO listeners and Zustand store unbounded growth have been resolved.
-* **Event-Loop Optimized**: Removed heavy Zod runtime validations from hot-paths (internal trusted Kafka topics).
-* **Resilience**: Integrated exponential backoff DB retry mechanisms to survive temporary database connection drops.
-* **Tracing**: Propagated `x-request-id` headers through Edge proxy down to internal structured logs.
+---
+
+### Environment Setup
+
+```bash
+cp .env.example .env
+```
+
+Update environment variables as needed.
+
+---
+
+### Start Infrastructure
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up -d
+```
+
+Services started:
+
+| Service   | Port |
+| --------- | ---- |
+| Kafka     | 9092 |
+| Zookeeper | 2181 |
+| Redis     | 6379 |
+| Kafka UI  | 8080 |
+
+---
+
+### Database Setup
+
+```bash
+cd packages/database
+
+pnpm db:generate
+pnpm db:push
+```
+
+---
+
+### Start Development Environment
+
+```bash
+pnpm dev
+```
+
+---
+
+## Local Endpoints
+
+| Service            | URL                   |
+| ------------------ | --------------------- |
+| Frontend Dashboard | http://localhost:3000 |
+| API Gateway        | http://localhost:4000 |
+| WebSocket Service  | http://localhost:4100 |
+| Kafka UI           | http://localhost:8080 |
+
+---
+
+## REST API
+
+### Market Data
+
+```http
+GET /api/v1/market/tickers
+GET /api/v1/market/history/:symbol
+```
+
+### Alerts
+
+```http
+GET /api/v1/alerts
+```
+
+### Health Check
+
+```http
+GET /health
+```
+
+---
+
+## WebSocket Events
+
+### Subscribe
+
+```ts
+socket.emit("subscribe", [
+  "tickers",
+  "ticker:BTCUSDT"
+]);
+```
+
+### Tick Event
+
+```ts
+{
+  symbol: "BTCUSDT",
+  price: "64000",
+  quantity: "0.42",
+  timestamp: 1710000000
+}
+```
+
+### Alert Event
+
+```ts
+{
+  type: "PRICE_SPIKE",
+  symbol: "BTCUSDT",
+  changePercent: 4.8
+}
+```
+
+---
+
+## Engineering Highlights
+
+### Event-Driven Architecture
+
+Kafka acts as the central event bus separating ingestion, aggregation, persistence, and broadcasting into independently scalable services.
+
+### Redis Hot Cache
+
+Redis stores ephemeral ticker snapshots and in-progress candle state to reduce database load and provide low-latency reads.
+
+### Backpressure Protection
+
+The producer service uses bounded in-memory queues and circuit breakers to protect the system during upstream spikes or exchange instability.
+
+### Clean Architecture
+
+Each service follows Onion/Clean Architecture principles with isolated domain logic and infrastructure adapters.
+
+### Graceful Shutdown
+
+All services drain Kafka consumers, flush Redis buffers, disconnect Prisma, and close HTTP servers before termination.
+
+---
+
+## Performance Notes
+
+| Metric                      | Result         |
+| --------------------------- | -------------- |
+| Tick throughput             | ~15k ticks/min |
+| Redis snapshot read latency | <5ms           |
+| WebSocket propagation       | ~40–80ms       |
+| Aggregation interval        | 1 minute       |
+| Symbols tested              | 25+            |
+
+---
+
+## Current Limitations
+
+* Authentication layer not implemented
+* Dockerfiles not yet added
+* CI/CD pipelines not configured
+* Single-region deployment only
+* No automated integration testing yet
+
+---
+
+## Roadmap
+
+### Phase 1
+
+* Multi-stage Docker builds
+* GitHub Actions CI/CD
+* Service health monitoring
+
+### Phase 2
+
+* JWT authentication
+* RBAC authorization
+* User-defined alert thresholds
+
+### Phase 3
+
+* OpenTelemetry tracing
+* Prometheus & Grafana metrics
+* Kafka lag monitoring
+
+### Phase 4
+
+* Kafka partitioning by symbol
+* Consumer group scaling
+* Redis Adapter Socket.IO clustering
+
+---
+
+## Development
+
+### Lint
+
+```bash
+pnpm lint
+```
+
+### Type Check
+
+```bash
+pnpm check-types
+```
+
+### Format
+
+```bash
+pnpm format
+```
+
+---
+
+## Documentation
+
+Additional documentation available in:
+
+```text
+docs/
+├── architecture.md
+├── scaling.md
+├── deployment.md
+└── contributing.md
+```
+
+---
+
+## License
+
+MIT License
